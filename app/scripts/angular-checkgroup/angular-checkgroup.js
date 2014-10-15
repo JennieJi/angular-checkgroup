@@ -1,7 +1,7 @@
 /**
  * @name 			angular-checkgroup
  * @description		build your custom radio and checkbox
- * @version 		0.1.0
+ * @version 		0.1.1
  * @author			Jennie Ji
  * https://github.com/JennieJi/angular-checkgroup
  */
@@ -122,7 +122,7 @@ angular.module('checkgroup', [])
 		require: '^checkgroup',
 		templateUrl: 'templates/check.html',
 		link: function (scope, element, attrs, ctrl) {
-			scope.isChecked = !!attrs.checked;
+			scope.isChecked = angular.isDefined(attrs.checked);
 			scope.checkType = attrs.checkType;
 
 			switch( attrs.checkType ) {

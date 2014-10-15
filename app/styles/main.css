@@ -2,9 +2,8 @@
   color: #f00;
 }
 .check {
-  float: left;
-  clear: both;
-  margin: 0.2em 0;
+  display: inline-block;
+  margin: 0.4em 5px;
   padding: 0.5em 10px;
   background: #eee;
   cursor: pointer;
