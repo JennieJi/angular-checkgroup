@@ -1,7 +1,7 @@
 /**
  * @name 			angular-checkgroup
  * @description		build your custom radio and checkbox
- * @version 		0.1.1
+ * @version 		0.1.2
  * @author			Jennie Ji
  * https://github.com/JennieJi/angular-checkgroup
  */
@@ -17,7 +17,7 @@ angular.module('checkgroup', [])
 	this.checkedValue = [];
 	this.multiple = false;
 	this.model = null;
-	this.last = 0;
+	this.last = -1;
 	this.index = -1;
 
 	this.registerCheck = function(checkScope) {
@@ -92,21 +92,21 @@ angular.module('checkgroup', [])
 		ctrl.groupCheck(allChecks, checkedLength === checks.length);
 		ctrl.groupCheck(noneChecks, checkedLength === 0);
 
-		$scope[ctrl.model] = ctrl.checkedValue;
+		$scope.value = ctrl.checkedValue;
 	};
 }])
 .directive('checkgroup', function () {
 	return {
 		restrict: 'AE',
 		controller: 'checkgroupController',
+		scope: {
+			value: '=checkgroup'
+		},
 		compile: function(){
 			return {
 				pre: function(scope, element, attrs, ctrl){
 					ctrl.last = element.find('check').length + element.find('[check]').length - 1;
-				},
-				post: function (scope, element, attrs, ctrl) {
 					ctrl.multiple = attrs.checkMultiple || false;
-					ctrl.model = attrs.checkgroup;
 				}
 			};
 		}
@@ -120,7 +120,7 @@ angular.module('checkgroup', [])
 		},
 		transclude: true,
 		require: '^checkgroup',
-		templateUrl: 'templates/check.html',
+		template: '<div class="check" ng-class="{checked:isChecked}" ng-click="toggleCheck()" ng-transclude></div>',
 		link: function (scope, element, attrs, ctrl) {
 			scope.isChecked = angular.isDefined(attrs.checked);
 			scope.checkType = attrs.checkType;
