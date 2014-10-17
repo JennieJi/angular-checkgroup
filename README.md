@@ -39,7 +39,8 @@ Add reference to your APP like this:
 <dd>Clean up the master branch by moving demo code to gh-pages branch;</dd>
 <dd>Register package to bower.</dd>
 <dl>
-<dl>v 0.1.1</dl>
+<dl>
+<dt>v 0.1.1</dt>
 <dd>Make attribute ‘checked’ work same as HTML original one;</dd>
 <dd>Fix bug in the 4th demo;</dd>
 <dd>Fix Gruntfile to make ‘grunt build’ work with demo;</dd>
