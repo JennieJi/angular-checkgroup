@@ -1,1 +1,0 @@
-"use strict";angular.module("angularCheckgroupSample",["checkgroup"]),angular.module("angularCheckgroupSample").controller("demoController",["$scope",function(a){a.demoRadio1=[]}]);

@@ -8,6 +8,8 @@
  * Controller of the angularCheckgroupApp
  */
 angular.module('angularCheckgroupSample')
-  .controller('demoController', function ($scope) {
-  	$scope.demoRadio1 = [];
-  });
+  .controller('demoController', ['$scope', function ($scope) {
+  	$scope.select = function(item, value) {
+  		$scope[item] = value;
+  	};
+  }]);
