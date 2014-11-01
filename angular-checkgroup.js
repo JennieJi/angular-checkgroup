@@ -1,7 +1,7 @@
 /**
  * @name 			angular-checkgroup
  * @description		build your custom radio and checkbox
- * @version 		0.1.2
+ * @version 		0.1.3
  * @author			Jennie Ji
  * https://github.com/JennieJi/angular-checkgroup
  */
@@ -13,6 +13,7 @@ angular.module('checkgroup', [])
 		allChecks = [],
 		noneChecks = [];
 	var ctrl = this;
+	var directiveUpdate = false;
 
 	this.checkedValue = [];
 	this.multiple = false;
@@ -21,24 +22,20 @@ angular.module('checkgroup', [])
 	this.index = -1;
 
 	this.registerCheck = function(checkScope) {
-		var group = [];
-		switch(checkScope.checkType) {
-			case 'all':
-				if( ctrl.multiple ){
+		var group = checks;
+		if( ctrl.multiple ){
+			switch(checkScope.checkType) {
+				case 'all':
 					group = allChecks;
-				}
-				break;
-			case 'none':
-				if( ctrl.multiple ) {
+					break;
+				case 'none':
 					group = noneChecks;
-				}
-				break;
-			default:
-				group = checks;
+					break;
+			}
 		}
 
 		checkScope.$on('$destroy', function() {
-			var index = group.indexOf(checkScope);
+			var index = group ? group.indexOf(checkScope) : -1;
 		    if ( index <0 ) { return; }
 	      	group.splice(index, 1);
 	      	ctrl.index--;
@@ -50,15 +47,9 @@ angular.module('checkgroup', [])
 			ctrl.updateValue();
 		}
 	};
-	this.uncheckOthers = function(checkedScopes) {
-		var multipleScopes = angular.isArray(checkedScopes);
+	this.uncheckOthers = function(checkedScope) {
 		angular.forEach(checks, function(check){
-			if( multipleScopes ) {
-				var index = checkedScopes.indexOf(check);
-	    		check.isChecked = index >=0;
-			} else {
-				check.isChecked = angular.equals(check, checkedScopes);
-			}
+			check.isChecked = angular.equals(check, checkedScope);
 		});
 	};
 	this.groupCheck = function(group, checked) {
@@ -70,8 +61,11 @@ angular.module('checkgroup', [])
 	this.checkAll = function(checked) {
 		this.groupCheck(checks, checked);
 	};
+	this.checkedLengthUpdate = function( length ) {
+		this.groupCheck(allChecks, length === checks.length);
+		this.groupCheck(noneChecks, length === 0);
+	};
 	this.updateValue = function() {
-		var checkedLength = 0;
 		ctrl.checkedValue = [];
 		angular.forEach(checks, function(check){
 			if( !check.isChecked ) { return; }
@@ -81,30 +75,35 @@ angular.module('checkgroup', [])
 			}
 			ctrl.checkedValue.push( check.value );
 		});
-		checkedLength = ctrl.checkedValue.length;
+		this.checkedLengthUpdate( ctrl.checkedValue.length );
 
-		if( !ctrl.multiple && checkedLength === 0 && checks.length>0 ) {
-			ctrl.checkedValue.push( checks[0].value );
-			checks[0].isChecked = true;
-			checkedLength = 1;
-		}
-
-		ctrl.groupCheck(allChecks, checkedLength === checks.length);
-		ctrl.groupCheck(noneChecks, checkedLength === 0);
-
-		$scope.value = ctrl.checkedValue;
+		directiveUpdate = true;
+		$scope.checkgroup = ctrl.checkedValue;
 	};
+
+	$scope.$watch('checkgroup', function(newVal) {
+		if( directiveUpdate || !angular.isArray(newVal) ) {
+			directiveUpdate = false;
+			return;
+		}
+		angular.forEach(checks, function(check) {
+			check.isChecked = ctrl.multiple ? ( newVal.indexOf( check.value ) >= 0 ) : ( newVal[0] === check.value );
+		});
+		ctrl.checkedLengthUpdate( ctrl.multiple ? newVal.length : newVal.length ? 1 : 0 );
+	});
+
 }])
 .directive('checkgroup', function () {
 	return {
 		restrict: 'AE',
-		controller: 'checkgroupController',
 		scope: {
-			value: '=checkgroup'
+			checkgroup: '=checkgroup'
 		},
+		controller: 'checkgroupController',
 		compile: function(){
 			return {
 				pre: function(scope, element, attrs, ctrl){
+					ctrl.model = attrs.checkgroup;
 					ctrl.last = element.find('check').length + element.find('[check]').length - 1;
 					ctrl.multiple = attrs.checkMultiple || false;
 				}
@@ -112,43 +111,45 @@ angular.module('checkgroup', [])
 		}
 	};
 })
-.directive('check', function () {
+.directive('check', [function () {
 	return {
 		restrict: 'EA',
 		scope: {
-			value: '@'
+			value: '@',
+			isChecked: '@checked',
+			isDisabled: '=?checkDisabled'
 		},
 		transclude: true,
 		require: '^checkgroup',
-		template: '<div class="check" ng-class="{checked:isChecked}" ng-click="toggleCheck()" ng-transclude></div>',
+		template: '<div class="check" ng-class="{checked:isChecked}" ng-mouseup="toggleCheck();" ng-transclude></div>',
 		link: function (scope, element, attrs, ctrl) {
-			scope.isChecked = angular.isDefined(attrs.checked);
 			scope.checkType = attrs.checkType;
 
-			switch( attrs.checkType ) {
-				case 'all':
-					scope.toggleCheck = function() {
-						ctrl.checkAll( !scope.isChecked );
-						ctrl.updateValue();
-					};
-					break;
-				case 'none':
-					scope.toggleCheck = function() {
-						ctrl.checkAll( scope.isChecked );
-						ctrl.updateValue();
-					};
-					break;
-				default:
-					scope.toggleCheck = function() {
-						if( ctrl.multiple ) {
-							scope.isChecked = !scope.isChecked;
-						} else {
-							ctrl.uncheckOthers(scope);
+			scope.toggleCheck = function() {
+				if( scope.isDisabled ) { return; }
+				scope.isChecked = ctrl.multiple ? !scope.isChecked : true;
+			};
+
+			scope.$watch('isChecked', function(newVal) {
+				if( scope.isDisabled ) { return; }
+				if( newVal ) {
+					if( ctrl.multiple ) {
+						switch( scope.checkType ) {
+							case 'all':
+								ctrl.checkAll( true );
+								break;
+							case 'none':
+								ctrl.checkAll( false );
+								break;
 						}
-						ctrl.updateValue();
-					};
-			}
+					} else {
+						ctrl.uncheckOthers(scope);
+					}
+				}
+				ctrl.updateValue();
+			});
+
 			ctrl.registerCheck(scope);
 		}
 	};
-});
+}]);
